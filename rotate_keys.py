@@ -95,8 +95,8 @@ if __name__ == "__main__":
         fmt_string = '''
         Your new access & secret keys have been generated successfully.
         Please find the same:
-        [{}]
-        aws_access_key_id = {}
-        aws_secret_access_key = {}
+        [{0}]
+        aws_access_key_id = {1}
+        aws_secret_access_key = {2}
         '''
         print(fmt_string.format(aws_profile, new_keys[0], new_keys[1]))
