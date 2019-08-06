@@ -30,10 +30,9 @@ def get_current_keys(file_path,profile):
             tmp = fp.readline()
         try:
             match = re.match(pattern, lines)
-            for i in range(1,4):
+            for i in range(2,4):
                 keys_list.append(match.group(i))
-            print(keys_list)
-            #return keys_list
+            return keys_list
         except AttributeError:
             print("No Keys found for profile %s! Please try again using --profile option" % (profile))
             exit(22)
@@ -43,9 +42,45 @@ def get_current_keys(file_path,profile):
         print("%s does not exist! Please try again using --path option" % (file_path_expanded))
         exit(22)
 
+# Method for performing actual rotation of the keys
+def rotate_keys(keys_list):
+    new_keys_list = []
+
+    access_key_id = keys_list[0]
+    secret_access_key = keys_list[1]
+    session = boto3.Session(
+        aws_access_key_id = access_key_id,
+        aws_secret_access_key = secret_access_key
+    )
+    # Get IAM Client & Resource
+    iam_client = session.client('iam')
+    iam_resource = session.resource('iam')
+    current_user = iam.CurrentUser().user_name
+    print("Performing Key rotation for IAM User : %s" % (current_user))
+    
+    # Get the list of access keys for the user
+    access_keys_list = iam_client.list_access_keys(UserName=current_user)
+    active_keys = 0
+    inactive_keys = 0
+    for key in access_keys_list['AccessKeyMetadata']:
+        if key['Status'] == 'Inactive': inactive_keys += 1
+        elif key['Status'] == 'Active': active_keys += 1
+    print("#######################################")
+    print("User Name: %s" % (current_user))
+    print("Active Keys: %d" % (active_keys))
+    print("Inactive Keys: %d " % (inactive_keys))
+    print("#######################################")
+
+    # Delete the current access key
+    iam_client.delete_access_key(UserName=current_user, AccessKeyId=access_key_id)
+    print("Access Key %s has been deleted." % (access_key_id))
+    new_keys_metadata = iam_client.create_access_key(UserName=current_user)['AccessKey']
+    new_keys_list.append(new_keys_metadata['AccessKeyId'])
+    new_keys_list.append(new_keys_metadata['SecretAccessKey'])
+    return new_keys_list
+
 def print_version():
     print("AWS Key Rotation Version : %s" % (VERSION))               
-
 
 ## Main line execution
 
@@ -55,4 +90,13 @@ if __name__ == "__main__":
     else:
         aws_profile = args.profile
         cred_path = args.path
-        get_current_keys(cred_path, aws_profile)
+        old_keys = get_current_keys(cred_path, aws_profile)
+        new_keys = rotate_keys(old_keys)
+        fmt_string = '''
+        Your new access & secret keys have been generated successfully.
+        Please find the same:
+        [{}]
+        aws_access_key_id = {}
+        aws_secret_access_key = {}
+        '''
+        print(fmt_string.format(aws_profile, new_keys[0], new_keys[1]))
