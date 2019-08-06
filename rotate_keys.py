@@ -15,19 +15,44 @@ args = parser.parse_args()
 
 def get_current_keys(file_path,profile):
     ## Regex pattern for reading creds according to the profile specified
-    pattern = re.compile("^\["+ profile +"?\]\naws_access_key_id=(.*)?\naws_secret_access_key=(.*)")
-    lines = ""
+    pattern_string = "^\[("+ profile +")?\]\naws_access_key_id = (.*)?\naws_secret_access_key = (.*)"
+    pattern = re.compile(pattern_string)
     keys_list = []
+    lines = ""
 
     file_path_expanded = os.path.expanduser(file_path)
     
     if os.path.exists(file_path_expanded):
-        with open(file_path_expanded, 'rb') as fp:
-            try:
-                for line in fp.readlines():
-                    buffer += line
-                ## Read Credentials
-                match = re.match(pattern, buffer)
-                
-            except:
-                ## Handle errors
+        fp = open(file_path_expanded, 'r')
+        tmp = fp.readline()
+        while tmp != "":
+            lines += tmp
+            tmp = fp.readline()
+        try:
+            match = re.match(pattern, lines)
+            for i in range(1,4):
+                keys_list.append(match.group(i))
+            print(keys_list)
+            #return keys_list
+        except AttributeError:
+            print("No Keys found for profile %s! Please try again using --profile option" % (profile))
+            exit(22)
+        fp.close()
+    else:
+        ## Throw error for file not exists
+        print("%s does not exist! Please try again using --path option" % (file_path_expanded))
+        exit(22)
+
+def print_version():
+    print("AWS Key Rotation Version : %s" % (VERSION))               
+
+
+## Main line execution
+
+if __name__ == "__main__":
+    if args.version:
+        print_version()
+    else:
+        aws_profile = args.profile
+        cred_path = args.path
+        get_current_keys(cred_path, aws_profile)
