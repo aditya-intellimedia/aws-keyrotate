@@ -5,7 +5,7 @@ import argparse
 from botocore.exceptions import ClientError
 
 ## Key Rotation Version
-VERSION = "1.0.5"
+VERSION = "1.1.0"
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--profile', help='The name of the profile to use. Default is "default"', type=str, default='default')
@@ -112,6 +112,16 @@ def replace_keys_in_file(old_creds, new_creds, filepath):
         fp.close()
         print("Credentials have been written successfully in %s" % (filepath_expanded))
 
+def print_welcome_message():
+    message = '''
+    ___        ______    _  __          ____       _        _       
+   / \ \      / / ___|  | |/ /___ _   _|  _ \ ___ | |_ __ _| |_ ___ 
+  / _ \ \ /\ / /\___ \  | ' // _ \ | | | |_) / _ \| __/ _` | __/ _ |
+ / ___ \ V  V /  ___) | | . \  __/ |_| |  _ < (_) | || (_| | ||  __/
+/_/   \_\_/\_/  |____/  |_|\_\___|\__, |_| \_\___/ \__\__,_|\__\___|
+                                  |___/                                 
+'''
+    print(message)
 ## Main line execution
 
 if __name__ == "__main__":
@@ -120,6 +130,7 @@ if __name__ == "__main__":
     if args.version:
         print_version()
     else:
+        print_welcome_message()
         aws_profile = args.profile
         cred_path = args.path
         username = args.username
